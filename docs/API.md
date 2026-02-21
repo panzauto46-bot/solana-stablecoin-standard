@@ -1,52 +1,52 @@
 # 🛡️ API.md (Watchtower Backend)
-Sistem penyebaran HTTP untuk interaksi "Perangkat Sisi Klien" maupun "Core Banking System". Seluruh interaksi Token harus dilaporkan di sini demi menjamin Integritas Off-Chain.
+An HTTP broadcasting system designed for interaction with "Client-Side Devices" and "Core Banking Systems". Every Token interaction must be reported here to guarantee Off-Chain Integrity.
 
-## A. Service Lifecycle (Kesehatan)
-> Mengekspos dan melaporkan status detak server _Solana Indexer Service_ dan _Bot_ untuk memastikan seluruh node aktif menerima instruksi _Mint_ ke _Devnet/Mainnet_.
+## A. Service Lifecycle (Health)
+> Exposes and reports the heartbeat status of the _Solana Indexer Service_ and _Bots_ to confirm all nodes are active and accepting _Mint_ instructions to _Devnet/Mainnet_.
 
-*   **URL Endpoint Server:** `http://localhost:3000` (atau Port yang sudah Disesuaikan oleh _Docker_ \`.env\`).
+*   **Endpoint Server URL:** `http://localhost:3000` (or Port configured via _Docker_ \`.env\`).
 *   **Method Check:**
     ```json
     GET /health
     {
       "status": "OK",
-      "message": "SSS Watchtower Backend is Healthy! \uD83D\uDFE2"
+      "message": "SSS Watchtower Backend is Healthy! 🟢"
     }
     ```
 
-## B. Operasional Utama (Coordinator Services)
+## B. Core Operations (Coordinator Services)
 
 ### 1. `POST /api/mint`
-Ditujukan ke API Core Banking System setelah validasi deposit "Klien Uang _Fiat_". Layanan SSS-Forge Backend ini mengeksekusi Token-2022 Contract untuk memvalidasi pencetakan token baru (Menambah Saldo Digital).
+Aimed at the Core Banking System API after a valid "Fiat U.S. Client" deposit confirmation. This SSS-Forge Backend service triggers the Token-2022 Contract to execute new token printing (Augmenting Digital Balances).
 
-**Format _Payload_ JSON:**
+**JSON _Payload_ Format:**
 ```json
 {
   "amount": 999000,
-  "destination": "Pubkey_Address_Klien_Valid..."
+  "destination": "Valid_Client_Pubkey_Address..."
 }
 ```
 
 ### 2. `POST /api/burn`
-Ditujukan untuk mencocokkan *Claim Settlement* yang memvalidasi pembakaran token pengguna dengan imbalan penarikan dana (_fiat withdrawal_) di Bank reguler. Ini menurunkan _Circulation Supply_ (Pengendalian Hukum Ekonomi `Stablecoin Peg`).
+Designed to reconcile *Claim Settlements* validating the combustion of user tokens in exchange for real-world bank withdrawals (_fiat withdrawal_). This diminishes the _Circulation Supply_ (Enforcing the Economic Law of the `Stablecoin Peg`).
 
-**Format _Payload_ JSON:**
+**JSON _Payload_ Format:**
 ```json
 {
   "amount": 1000,
-  "source": "Treasury_Address_Operator..."
+  "source": "Operator_Treasury_Address..."
 }
 ```
 
-## C. Tindakan Investigasi Hukum
+## C. Legal Investigation Interventions
 ### 1. `POST /api/compliance/blacklist`
-Memanggil Layanan Kepatuhan yang segera mengubah PDA eksternal `BlacklistEntry` milik Solana.
-Menolak langsung segala upaya _Transfer Hook_ di dompet tertarget, baik dalam bentuk "Kirim", maupun "Terima". _Webhook service_ pun dibangkitkan untuk laporan internal Slack/Discord secara asinkron.
+Calls upon the Compliance Service to immediately mutate Solana's external `BlacklistEntry` PDA.
+Outright denies all _Transfer Hook_ attempts on the targeted wallet, both "Send" and "Receive" actions. The _Webhook service_ is simultaneously awoken for asynchronous internal Slack/Discord reporting.
 
-**Format _Payload_ JSON:**
+**JSON _Payload_ Format:**
 ```json
 {
-  "address": "Pubkey_Dompet_Peretas...",
+  "address": "Hacker_Wallet_Pubkey...",
   "reason": "Suspicious Algorithmic Money Mixing Pattern (AML Red Flag)"
 }
 ```

@@ -1,26 +1,26 @@
-# 🔰 Spesifikasi SSS-1 (Minimal Stablecoin)
+# 🔰 SSS-1 Specification (Minimal Stablecoin)
 
-Standarisasi ringan aset Stablecoin di ekosistem Solana berbasis Token-2022. Cocok untuk algoritma *Stablecoin Decentralized* (seperti DAI).
+A lightweight Stablecoin standard in the Solana ecosystem based on Token-2022. Perfectly suited for algorithmic or *Decentralized Stablecoins* (similar to DAI).
 
-## 1. Extension yang Aktif
-SSS-1 diinisialisasikan dengan batas fungsional terendah, memaksimalkan fleksibilitas penggunaan DeFi (AAM, *Lending Vault*). 
+## 1. Active Extensions
+SSS-1 is initialized with the lowest functional threshold, maximizing usage flexibility in DeFi (AMMs, *Lending Vaults*). 
 
-*   `Mint Authority`: Memungkinkan protokol *smart contract* untuk menambah suplai.
-*   `Freeze Authority`: Memungkinkan *Emergency Switch* apabila celah peretasan di jaringan baru ditemukan (menahan likuiditas).
-*   `Metadata Pointer`: Mengarahkan nama token *on-chain* secara desentralistik ke alamat dompet Mint (menghindari bergantung ke Token List pihak ketiga).
+*   `Mint Authority`: Allows the *smart contract* protocol to inflate the supply.
+*   `Freeze Authority`: Acts as an *Emergency Switch* to halt liquidity if a network exploit vulnerability is newly discovered.
+*   `Metadata Pointer`: Pointers the *on-chain* token name decentrally to the Mint wallet address (eliminating reliance on third-party Token Lists).
 
-## 2. Pengecualian dan Batasan
-Karena target dari SSS-1 adalah *Trustless Decentralized stablecoin*, ekstensi berikut ini **DILARANG**:
-*   🚫 `Transfer Hook` (Tidak boleh dimata-matai atau dihambat).
-*   🚫 `Permanent Delegate` (Uang yang dicetak murni milik pengguna mutlak, tidak bisa diretas lewat *Governance* belakang layar).
-*   🚫 `Default Account State` Frozen (Setiap akun yang membuka *associated token account* baru dapat langsung mentranser/menerima aset).
+## 2. Exclusions and Limitations
+Since the target of SSS-1 is to be a *Trustless Decentralized stablecoin*, the following extensions are **PROHIBITED**:
+*   🚫 `Transfer Hook` (Must not be spied on or hindered).
+*   🚫 `Permanent Delegate` (Minted money is the absolute property of the user; it cannot be confiscated via behind-the-scenes *Governance*).
+*   🚫 `Default Account State` Frozen (Any account opening a new *associated token account* can immediately transfer/receive assets).
 
-## 3. Implementasi Kode
-Untuk membuat instance token tipe SSS-1:
-```javascript
+## 3. Code Implementation
+To instantiate an SSS-1 token type:
+```typescript
 import { SolanaStablecoin } from '@stbr/sss-token';
 const sdk = await SolanaStablecoin.create(conn, wallet, programId);
 
-// Menginisialisasikan token SSS-1 
+// Initialize an SSS-1 token 
 const mintAddress = await sdk.initMint('sss-1', 'My Algo Stable', 'ALGOS');
 ```

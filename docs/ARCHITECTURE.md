@@ -1,31 +1,31 @@
 # 🏗️ SSS-Forge System Architecture
 
-Sistem SSS-Forge merupakan arsitektur 3-Layer (Smart Contract, TypeScript SDK, dan Watchtower Backend) yang dirancang untuk pengembang dan operator keuangan agar dapat menerbitkan serta mengelola stablecoin di Solana (menggunakan *Token-2022*).
+The SSS-Forge system is a 3-Layer architecture (Smart Contract, TypeScript SDK, and Watchtower Backend) designed for developers and financial operators to issue and manage stablecoins on Solana (leveraging *Token-2022*).
 
 ## 1. Protocol Layer (Solana Smart Contract - Rust/Anchor)
-Lapisan inti dari keamanan SSS-Forge. Terdiri dari *instructions* yang mengaktifkan ekstensi Token-2022.
+The core security layer of SSS-Forge. It consists of *instructions* that activate Token-2022 extensions.
 
-*   **Penyimpanan State:** Mencakup konfigurasi **Role Default (RBAC)** dan Global Blacklist data (disimpan *on-chain* menggunakan PDA - Program Derived Address).
-*   **Transfer Hook:** Program perantara (interceptor) mandiri yang memvalidasi metadata tambahan *(ExtraAccountMetaList)* sebelum dana berpindah tangan.
+*   **State Storage:** Encompasses **Default Role configurations (RBAC)** and Global Blacklist data (stored *on-chain* utilizing PDAs - Program Derived Addresses).
+*   **Transfer Hook:** An independent interceptor program that validates auxiliary metadata *(ExtraAccountMetaList)* before funds change ownership.
 
 ## 2. Integration Layer (TypeScript SDK & CLI)
-Solusi *middle-man* yang bertugas membangun instruksi (TX) rumit atau *Cross-Program Invocation* ke Token-2022 agar bisa digunakan layaknya fungsi JavaScript biasa.
+The *middle-man* solution tasked with abstracting complex instructions (TXs) or *Cross-Program Invocations* to Token-2022, enabling them to be utilized like standard JavaScript functions.
 
-*   `SolanaStablecoin` Core Class: Modul abstrak dari operasi rumit.
-*   CLI Interface: Digunakan oleh *operator* untuk mengeksekusi perintah manajemen protokol, contohnya `sss-token mint` atau `sss-token freeze`.
+*   `SolanaStablecoin` Core Class: An abstraction module for complex operations.
+*   CLI Interface: Utilized by *operators* to execute protocol management commands, such as `sss-token mint` or `sss-token freeze`.
 
 ## 3. Operations Layer (Watchtower Backend - Node.js/Docker)
-Layanan yang harus selalu hidup (24/7) untuk melakukan otomatisasi tugas *off-chain* yang mahal, pemantauan *compliance*, dan pelaporan jembatan _Fiat-to-Crypto_.
+An always-online (24/7) service to automate expensive *off-chain* tasks, monitor *compliance*, and report on the _Fiat-to-Crypto_ bridge.
 
-*   **Indexer Service:** WebSocket _Listener_ ke Solana RPC. Otomatis menarik _Instruction Data_ jika ada transaksi `Mint`, `Burn`, `Seize`.
-*   **Mint/Burn Coordinator:** Menahan siklus perputaran suplai token yang tidak tercetak jika uang *fiat (dunia nyata)* pengguna belum berhasil masuk ke Bank.
-*   **Compliance Alerts:** Jika ada tindakan penyitaan (_Seize_), layanan ini akan menembakkan pesan Webhook ke grup internal Slack/Discord regulator dalam hitungan milidetik.
+*   **Indexer Service:** A WebSocket _Listener_ connected to the Solana RPC. Automatically fetches _Instruction Data_ upon transactions like `Mint`, `Burn`, or `Seize`.
+*   **Mint/Burn Coordinator:** Manages the supply circulation cycle, ensuring unminted tokens are held if the user's *real-world fiat* hasn't successfully reached the Bank.
+*   **Compliance Alerts:** In the event of an asset seizure action (_Seize_), this service fires a Webhook message to the regulators' internal Slack/Discord groups in under a millisecond.
 
 ---
 
-### Data Flow Diagram (Siklus Seize)
-1. Peretas melakukan serangan ke protokol DeFi klien, dana dipindahkan secara tidak sah.
-2. Watchtower Backend **[Operations Layer]** mendeteksi *Pattern* tidak terduga dan membunyikan alarm ke Discord/Slack Webhook.
-3. Petugas Regulasi (Yang memiliki DOMPET dengan aksi otorisasi *Seizer*) membuka CLI `sss-token seize <hacker_address> --to <treasury>` **[Integration Layer]**.
-4. Instruksi dikirim ke Solana RPC. *Smart Contract* SSS-Forge **[Protocol Layer]** memvalidasi *signature* `Seizer`.
-5. Karena Token SSS-2 memiliki ekstensi **Permanent Delegate**, Contract secara instan memaksa transfer saldo peretas kembali ke *Treasury* tanpa perlu izin kunci peretas! 
+### Data Flow Diagram (Seize Cycle)
+1. A hacker attacks a client's DeFi protocol, and funds are moved illegitimately.
+2. The Watchtower Backend **[Operations Layer]** detects anomalous *Patterns* and triggers an alarm to the Discord/Slack Webhook.
+3. The Regulatory Officer (holding a WALLET with *Seizer* authorization) boots the CLI `sss-token seize <hacker_address> --to <treasury>` **[Integration Layer]**.
+4. The instruction is transmitted to the Solana RPC. The SSS-Forge *Smart Contract* **[Protocol Layer]** validates the `Seizer`'s *signature*.
+5. Because the SSS-2 Token possesses the **Permanent Delegate** extension, the Contract instantly forces the transfer of the hacker's balance back to the *Treasury* without requiring the hacker's key signature!

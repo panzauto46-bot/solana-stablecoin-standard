@@ -1,21 +1,21 @@
-# ⚖️ COMPLIANCE.md (Buku Saku Regulasi / Audit Trail)
+# ⚖️ COMPLIANCE.md (Regulatory Pocketbook / Audit Trail)
 
-SSS-Forge dibangun untuk menjembatani **Gap (Celah Kepercayaan)** antara institusi Fiat (Bank) dan ruang publik Decentralized Finance (DeFi) di atas Solana. Ini adalah landasan operasional agar Kepatuhan Regulasi Internasional ditegakkan dengan *Zero-Knowledge Proofs* yang disokong **Watchtower Backend**.
+SSS-Forge was built to bridge the **Gap (Trust Deficit)** between Fiat institutions (Banks) and the public Decentralized Finance (DeFi) space on Solana. This serves as the operational foundation to enforce International Regulatory Compliance via *Zero-Knowledge Proofs* bolstered by the **Watchtower Backend**.
 
-## A. Kebijakan KYC (Know Your Customer)
-Untuk token berbasis SSS-2 (The Regulary Grade), sebuah dompet publik di Solana tidak dapat mengirim uang sebelum di Verifikasi Identitas Dunia Nyata.
-*   Buka akun dengan *default account state* `Frozen` dengan menyalakan opsi `Default Account State` Token 2022.
-*   Setelah Backend menyetujui dokumen KYC dari klien pengguna, Watchtower menembak API `POST /api/mint` yang diawali dengan rutinitas `Unfreeze` ke SDK ke Smart Contract.
+## A. KYC (Know Your Customer) Policy
+For tokens built on SSS-2 (The Regulatory Grade), a public wallet on Solana cannot transmit funds prior to Real-World Identity Verification.
+*   Open accounts with a default account state of `Frozen` by enabling the Token 2022 `Default Account State` option.
+*   Once the Backend validates a user client's KYC documents, the Watchtower triggers the `POST /api/mint` API preceded by an `Unfreeze` routine via the SDK to the Smart Contract.
 
-## B. Penegakan AML (Anti-Money Laundering) 
-*   Di saat transfer `Instruct` dijalankan oleh aktor mana pun di *Ledger*, **Transfer Hook** program melakukan verifikasi otomatis terhadap PDA `BlacklistEntry`.
-*   Jika salah satu dompet berlabel Merah, transaksi itu Langsung Gagal *Reverted* (bahkan tidak masuk mempool - aman dari pengeksploitasi Jaringan).
+## B. AML (Anti-Money Laundering) Enforcement 
+*   Whenever a transfer `Instruct` is executed by any actor on the *Ledger*, the **Transfer Hook** program performs an automated verification against the external `BlacklistEntry` PDA.
+*   If any involved wallet carries a Red Label, the transaction is Immediately *Reverted* (it doesn't even enter the mempool - preserving immunity from Network exploiters).
 
-## C. Seize Funds (Penyitaan Darurat Kriminal Hacking) 
-*   Ini adalah fitur eksklusif yang disokong *Permanent Delegate*, namun dengan pembatasan bahwa **Seizer Authority hanyalah PDA dari Multisig / Court Order**, bukan dompet milik perorangan, sehingga peretas dari internal SSS-Forge (*Rug pull*) mustahil mencuri dana publik.
-*   Semua kejadian `Seize` ditulis otomatis ke *File log Winston Backend*. Laporan yang dihasilkan tidak dapat diputar karena terkunci Hash waktu riil (*audit log off-chain timestamp*). 
+## C. Seize Funds (Emergency Hacks Criminal Confiscation) 
+*   This is an exclusive feature empowered by the *Permanent Delegate*, albeit restricted such that the **Seizer Authority is strictly a Multisig / Court Order PDA**, rather than an individual's wallet. This renders it impossible for an internal SSS-Forge rogue developer to steal public funds (*Rug pull*).
+*   All `Seize` events are automatically chronicled into the *Backend Winston log files*. Generated reports are tamper-proof due to real-time Hash locking (*off-chain audit log timestamp*). 
 
-## Mekanisme Peringatan Jaringan (Webhook Service) 
-Backend melayani sebagai sistem kekebalan dengan mengekspos notifikasi: 
-*   **Discord:** Jika ada panggilan *Mint* atau pencetakan *Stablecoin SSS2* bernilai > \$10.000.
-*   **Slack:** Deteksi otomatis alamat *suspicious transfer* jika _address_ tercurigai (Algorithmic Heuristics). Webhook ini akan masuk ke tim *Analisis Penipuan* untuk menentukan _Seize/Blacklist_ secara manual menggunakan CLI SSS-Forge.
+## Network Alert Mechanisms (Webhook Service) 
+The Backend functions as an immune system, exposing notifications: 
+*   **Discord:** When a *Mint* call or *SSS2 Stablecoin* printing exceeding \$10,000 occurs.
+*   **Slack:** Autonomous detection of a *suspicious transfer* if an _address_ is flagged (Algorithmic Heuristics). This webhook is relayed to the *Fraud Analysis* team to determine whether to manually enact a _Seize/Blacklist_ via the SSS-Forge CLI.
