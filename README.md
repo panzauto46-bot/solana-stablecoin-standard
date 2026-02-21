@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](#)
-[![Solana](https://img.shields.io/badge/Solana-Mainnet--Beta-green?logo=solana)](https://solana.com/)
+[![Solana Devnet](https://img.shields.io/badge/Solana-Devnet--Live-green?logo=solana)](https://explorer.solana.com/address/sssFeG1j3c5xU2aXZK1T8M2VfQf4wJpG6P8N9gYqA?cluster=devnet)
 [![Anchor](https://img.shields.io/badge/Anchor-v0.30.1-blue)](#)
 
 *An innovative protocol for launching next-generation stablecoins on Solana, fully compliant with the new spl-token-2022 standard and advanced extensions.*
@@ -14,14 +14,28 @@
 
 ---
 
+## 🚀 Devnet Proof of Deployment
+
+SSS Forge Smart Contract is live on Solana Devnet!
+*   **Program ID:** [`sssFeG1j3c5xU2aXZK1T8M2VfQf4wJpG6P8N9gYqA`](https://explorer.solana.com/address/sssFeG1j3c5xU2aXZK1T8M2VfQf4wJpG6P8N9gYqA?cluster=devnet)
+*   *Use the Solana Explorer link above to verify our Program Deployment and associated transactions.*
+
+---
+
 ## 📖 Overview
 
 **SSS Forge** is an all-in-one Smart Contract architecture and Dashboard interface designed to generate, manage, and regulate stablecoins on the Solana blockchain. By fully leveraging the modern **Token-2022** extensions, SSS Forge provides two powerful tiers of stablecoin creation:
 
-1.  **SSS-1: Minimal Stablecoin**
+**(See Core Overviews in our Comprehensive Project Kit):**
+*  🧭 **Architecture Deep Dive:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+*  🌐 **Watchtower API Reference:** [`docs/API.md`](docs/API.md)
+*  🛡️ **Regulation & Compliance Rules:** [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md)
+*  🛠️ **Terminal CLI Guide:** [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
+
+1.  **SSS-1: Minimal Stablecoin** *(Spec: [`docs/SSS-1.md`](docs/SSS-1.md))*
     *   Designed for algorithmic or decentralized stablecoins.
     *   Features: Mint Authority, Freeze Authority, and Metadata Pointer.
-2.  **SSS-2: Compliant Stablecoin**
+2.  **SSS-2: Compliant Stablecoin** *(Spec: [`docs/SSS-2.md`](docs/SSS-2.md))*
     *   Designed for fiat-backed or regulated stablecoins.
     *   Features everything in SSS-1, *plus*:
         *   **Permanent Delegate:** Absolute authority to move or seize assets for compliance.
