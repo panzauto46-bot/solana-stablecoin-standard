@@ -1,63 +1,67 @@
-import { Connection, PublicKey } from '@solana/web3.js';
-import { logger } from '../utils/logger';
-import { ComplianceService } from './compliance.service';
+import { Connection, PublicKey } from "@solana/web3.js";
+import { logger } from "../utils/logger";
+import { ComplianceService } from "./compliance.service";
+
+type OnLogsPayload = {
+  signature: string;
+  logs: string[];
+};
 
 export class IndexerService {
-    private connection: Connection;
-    private mintAddress: PublicKey;
-    private complianceService: ComplianceService;
-    private subscriptionId: number | null = null;
+  private readonly connection: Connection;
+  private readonly mintAddress: PublicKey;
+  private readonly complianceService: ComplianceService;
+  private subscriptionId: number | null = null;
 
-    constructor(connection: Connection, mintAddress: string, complianceService: ComplianceService) {
-        this.connection = connection;
-        try {
-            this.mintAddress = new PublicKey(mintAddress);
-        } catch {
-            // Mock Public Key for local testing
-            this.mintAddress = new PublicKey('11111111111111111111111111111111');
-        }
-        this.complianceService = complianceService;
+  constructor(connection: Connection, mintAddress: string, complianceService: ComplianceService) {
+    this.connection = connection;
+    try {
+      this.mintAddress = new PublicKey(mintAddress);
+    } catch {
+      this.mintAddress = new PublicKey("11111111111111111111111111111111");
     }
+    this.complianceService = complianceService;
+  }
 
-    public async startListening() {
-        logger.info(`👂 Starting Blockchain Indexer for Mint: ${this.mintAddress.toBase58()}`);
+  public async startListening() {
+    logger.info(`Starting blockchain indexer for mint: ${this.mintAddress.toBase58()}`);
+    this.subscriptionId = this.connection.onLogs(
+      this.mintAddress,
+      (logs: OnLogsPayload, _ctx: unknown) => {
+        logger.info(`[INDEXER] Transaction signature: ${logs.signature}`);
+        this.processLogs(logs.signature, logs.logs);
+      },
+      "confirmed",
+    );
+  }
 
-        // Listen to account changes or program logs
-        // Using onLogs for generic instruction catch (Transfer, MintTo, Burn)
-        this.subscriptionId = this.connection.onLogs(
-            this.mintAddress,
-            (logs, ctx) => {
-                logger.info(`[INDEXER] New Transaction Signature: ${logs.signature}`);
-                this.processLogs(logs.signature, logs.logs);
-            },
-            'confirmed'
-        );
+  private processLogs(signature: string, logs: string[]) {
+    const isMint = logs.some(log => log.includes("Instruction: MintTo"));
+    const isBurn = logs.some(log => log.includes("Instruction: Burn"));
+    const isTransfer = logs.some(log => log.includes("Instruction: Transfer"));
+    const isSeize = logs.some(log => log.includes("Instruction: SeizeFunds"));
+
+    if (isSeize) {
+      this.complianceService.logComplianceEvent("SEIZE_FUNDS", signature);
+      return;
     }
-
-    private processLogs(signature: string, logs: string[]) {
-        // Basic heuristics to determine the event type based on logs
-        const isMint = logs.some(log => log.includes('Instruction: MintTo'));
-        const isBurn = logs.some(log => log.includes('Instruction: Burn'));
-        const isTransfer = logs.some(log => log.includes('Instruction: Transfer'));
-        const isSeize = logs.some(log => log.includes('Instruction: SeizeFunds'));
-
-        if (isSeize) {
-            logger.warn(`🚨 SEIZE OPERATION DETECTED: tx ${signature}. Creating Audit Trail...`);
-            this.complianceService.logComplianceEvent('SEIZE_FUNDS', signature);
-        } else if (isMint) {
-            logger.info(`💸 MINT EVENT DETECTED: tx ${signature}. Recording supply increase.`);
-        } else if (isBurn) {
-            logger.info(`🔥 BURN EVENT DETECTED: tx ${signature}. Recording supply decrease.`);
-        } else if (isTransfer) {
-            logger.info(`🔄 TRANSFER DETECTED: tx ${signature}. Verifying against Blacklist heuristics (Simulated).`);
-            this.complianceService.monitorSuspiciousActivity(signature);
-        }
+    if (isMint) {
+      logger.info(`MINT event detected: ${signature}`);
+      return;
     }
-
-    public stopListening() {
-        if (this.subscriptionId) {
-            this.connection.removeOnLogsListener(this.subscriptionId);
-            logger.info(`🔇 Indexer stopped.`);
-        }
+    if (isBurn) {
+      logger.info(`BURN event detected: ${signature}`);
+      return;
     }
+    if (isTransfer) {
+      logger.info(`TRANSFER event detected: ${signature}`);
+      this.complianceService.monitorSuspiciousActivity(signature);
+    }
+  }
+
+  public stopListening() {
+    if (!this.subscriptionId) return;
+    this.connection.removeOnLogsListener(this.subscriptionId);
+    logger.info("Indexer stopped.");
+  }
 }

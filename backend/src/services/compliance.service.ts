@@ -1,54 +1,89 @@
-import { WebhookService } from './webhook.service';
-import { logger } from '../utils/logger';
+import { WebhookService } from "./webhook.service";
+import { logger } from "../utils/logger";
+
+export interface ComplianceAuditEntry {
+  timestamp: string;
+  action: string;
+  details: string;
+}
 
 export class ComplianceService {
-    private blacklist: Map<string, string>;
-    private webhookService: WebhookService;
+  private readonly blacklist: Map<string, string>;
+  private readonly webhookService: WebhookService;
+  private readonly auditLog: ComplianceAuditEntry[] = [];
 
-    constructor(webhookService: WebhookService) {
-        this.blacklist = new Map();
-        this.webhookService = webhookService;
+  constructor(webhookService: WebhookService) {
+    this.blacklist = new Map();
+    this.webhookService = webhookService;
+    this.blacklist.set("Hack3r111111111111111111111111111111111", "Lazarus Group");
+  }
 
-        // Load existing (mock)
-        this.blacklist.set('Hack3r111111111111111111111111111111111', 'Lazarus Group');
+  public async addToBlacklist(address: string, reason: string) {
+    logger.info(`[COMPLIANCE] blacklist add address=${address} reason=${reason}`);
+    this.blacklist.set(address, reason);
+    this.logComplianceEvent("BLACKLIST_ADD", `${address} :: ${reason}`);
+
+    await this.webhookService.sendAlert(
+      "Address Blacklisted",
+      `Address: \`${address}\`\nReason: **${reason}**`,
+    );
+
+    return {
+      status: "blacklisted",
+      address,
+      reason,
+      count: this.blacklist.size,
+    };
+  }
+
+  public async removeFromBlacklist(address: string) {
+    if (!this.blacklist.has(address)) {
+      throw new Error(`Address ${address} is not in blacklist.`);
     }
 
-    public async addToBlacklist(address: string, reason: string) {
-        logger.info(`🚫 [COMPLIANCE] Adding ${address} to Global Transfer Hook Blacklist.`);
-        logger.info(`   Reason: ${reason}`);
+    const reason = this.blacklist.get(address) ?? "unknown";
+    this.blacklist.delete(address);
+    this.logComplianceEvent("BLACKLIST_REMOVE", `${address} :: ${reason}`);
 
-        this.blacklist.set(address, reason);
+    await this.webhookService.sendAlert(
+      "Address Removed From Blacklist",
+      `Address: \`${address}\`\nPrevious Reason: **${reason}**`,
+    );
 
-        // Trigger on-chain transaction
-        // await sdk.blacklistAdd(new PublicKey(address));
+    return {
+      status: "removed",
+      address,
+      count: this.blacklist.size,
+    };
+  }
 
-        await this.webhookService.sendAlert(
-            "🛑 ADDRESS BLACKLISTED",
-            `Address: \`${address}\`\nReason: **${reason}**\nTx: [View on Explorer](#)`
-        );
+  public listBlacklist() {
+    return [...this.blacklist.entries()].map(([address, reason]) => ({ address, reason }));
+  }
 
-        return {
-            status: 'Blacklisted',
-            address,
-            reason
-        };
+  public monitorSuspiciousActivity(txSignature: string) {
+    if (txSignature.length > 5 && txSignature.toLowerCase().includes("malicious")) {
+      logger.warn(`Suspicious transaction detected: ${txSignature}`);
+      this.logComplianceEvent("SUSPICIOUS_TRANSFER", txSignature);
+      this.webhookService.sendAlert(
+        "Suspicious Activity Detected",
+        `Tx Signature: \`${txSignature}\`\nFlag: Algorithmic anomaly`,
+      );
     }
+  }
 
-    // Called blindly by the indexer
-    public monitorSuspiciousActivity(txSignature: string) {
-        // Artificial logic: If tx ending with generic string, we flag it.
-        if (txSignature.length > 5 && txSignature.includes('malicious')) {
-            logger.warn(`⚠️ Suspicious Transaction Detected! Tx: ${txSignature}`);
-            this.logComplianceEvent('SUSPICIOUS_TRANSFER', txSignature);
-            this.webhookService.sendAlert(
-                "⚠️ SUSPICIOUS ACTIVITY DETECTED",
-                `Tx Signature: \`${txSignature}\`\nFlag: Algorithmic Anomaly`
-            );
-        }
-    }
+  public logComplianceEvent(action: string, details: string) {
+    this.auditLog.unshift({
+      timestamp: new Date().toISOString(),
+      action,
+      details,
+    });
+    this.auditLog.splice(500);
+    logger.info(`[AUDIT] ${action} :: ${details}`);
+  }
 
-    public logComplianceEvent(type: string, signature: string) {
-        // In production, this writes to PostgreSQL for regulators
-        logger.info(`📁 [AUDIT LOG] ${new Date().toISOString()} | TYPE: ${type} | SIG: ${signature}`);
-    }
+  public getAuditLog(action?: string): ComplianceAuditEntry[] {
+    if (!action) return this.auditLog;
+    return this.auditLog.filter(e => e.action.toLowerCase() === action.toLowerCase());
+  }
 }

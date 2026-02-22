@@ -1,61 +1,78 @@
-# ⚙️ OPERATIONS.md (Terminal Control Manual)
+# OPERATIONS.md
 
-A Quick Guide for Operators (or "Generals") of the SSS Protocol on executing Command Line Interface (CLI) features. Utilized for deploying, managing, and _Querying_ blockchain data.
+Operator runbook for `sss-token` CLI.
 
-### Preparation
-1. Navigate your *Terminal* to the source code's `/sdk` directory.
-2. Install dependencies using `npm`.
-    ```bash
-    npm install
-    npm run build
-    npm link
-    ```
-3. Test `sss-token -V` (Version 1.0.0).
+## Setup
 
----
+```bash
+cd sdk
+npm install
+npm run build
+npm link
+```
 
-## 1. Init (Initial Asset Manufacturing)
-This command mints the initial SSS *Mint Account* via your Devnet SSS-Forge Program.
+Optional environment:
 
-1.  **Deploying SSS-1 (Standard/Minimal)**
-    ```bash
-    sss-token init --preset sss-1 --name "Minimal Coin" --symbol "MCOIN"
-    ```
-2.  **Deploying SSS-2 (Regulatory/Legal Compliance)**
-    ```bash
-    sss-token init --preset sss-2 --name "Institutional USD" --symbol "IUSD"
-    ```
+```bash
+set SSS_RPC_URL=https://api.devnet.solana.com
+set SSS_PROGRAM_ID=<YOUR_DEPLOYED_PROGRAM_ID>
+```
 
-## 2. Supply Circulation
-Routinely performed by an authenticated `Minter` (correlating fiat money receipts via the *Backend*).
-*   **Mint (Print Assets to User)**
-    ```bash
-    sss-token mint --mint 11111111111... --to USER_ADDRESS... --amount 150000000 
-    ```
-*   **Burn (Destroy Assets in Treasury upon user withdrawal)**
-    ```bash
-    sss-token burn --mint 11111111111... --from OPERATOR_ADDRESS... --amount 1000000
-    ```
+## Configure Runtime
 
-## 3. Emergency & Legal Compliance (SSS-2 Exclusive)
-1.  **Freezing and Restoring a Single Wallet**
-    ```bash
-    sss-token freeze --mint MINT_ADDRESS --target USER_ADDRESS
-    sss-token thaw --mint MINT_ADDRESS --target USER_ADDRESS
-    ```
+```bash
+sss-token configure --rpc https://api.devnet.solana.com --program-id <YOUR_DEPLOYED_PROGRAM_ID>
+```
 
-2.  **Blacklist (Permanent Transaction Interception)**
-    ```bash
-    sss-token blacklist add HACKER_ADDRESS_123xyZ...
-    ```
+## Initialize Token
 
-3.  **Seize (Executing `Seizer` Intervention to Secure Stolen Funds)**
-    ```bash
-    # Forcibly transfers 50,000 funds from targeted wallet (Without their signature!)
-    sss-token seize HACKER_ADDRESS_123xyZ... --mint MINT_ADDRESS --to TREASURY_ADDRESS
-    ```
+Preset mode:
 
-## 4. Network Query / Audit
-*   Network Activity Report: `sss-token status`
-*   Liquidity Monitor: `sss-token supply --mint MINT_ADDRESS`
-*   Registered Accounts Informant: `sss-token minters list`
+```bash
+sss-token init --preset sss-1 --name "Minimal Stable" --symbol "MUSD"
+sss-token init --preset sss-2 --name "Compliant Stable" --symbol "CUSD"
+```
+
+Custom file mode:
+
+```bash
+sss-token init --custom config.toml
+sss-token init --custom config.json
+```
+
+## Core Supply Operations
+
+```bash
+sss-token mint <recipient> <amount>
+sss-token burn <amount> [--from <source>]
+sss-token freeze <address>
+sss-token thaw <address>
+sss-token pause
+sss-token unpause
+sss-token supply
+sss-token status
+```
+
+## SSS-2 Compliance Operations
+
+```bash
+sss-token blacklist add <address> --reason "OFAC match"
+sss-token blacklist remove <address>
+sss-token seize <address> --to <treasury> [--amount <value>]
+```
+
+## Management Commands
+
+```bash
+sss-token minters list
+sss-token minters add <address>
+sss-token minters remove <address>
+sss-token holders [--min-balance <amount>]
+sss-token audit-log [--action <type>]
+sss-token transfer-authority <new-authority>
+```
+
+## Notes
+
+- CLI state is persisted in `.sss-token-state.json` in current working directory.
+- `audit-log` reads local operator events recorded by CLI.

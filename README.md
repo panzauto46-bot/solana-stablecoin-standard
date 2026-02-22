@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](#)
-[![Solana Devnet](https://img.shields.io/badge/Solana-Devnet--Live-green?logo=solana)](https://explorer.solana.com/address/sssFeG1j3c5xU2aXZK1T8M2VfQf4wJpG6P8N9gYqA?cluster=devnet)
+[![Solana Devnet](https://img.shields.io/badge/Solana-Devnet--Live-green?logo=solana)](https://explorer.solana.com/?cluster=devnet)
 [![Anchor v0.30.1](https://img.shields.io/badge/Anchor-v0.30.1-blue)](#)
 
 *An innovative protocol for launching next-generation stablecoins on Solana, fully compliant with the new spl-token-2022 standard and advanced extensions.*
@@ -17,8 +17,8 @@
 ## 🚀 Devnet Proof of Deployment
 
 SSS Forge Smart Contract is live on Solana Devnet!
-*   **Program ID:** [`sssFeG1j3c5xU2aXZK1T8M2VfQf4wJpG6P8N9gYqA`](https://explorer.solana.com/address/sssFeG1j3c5xU2aXZK1T8M2VfQf4wJpG6P8N9gYqA?cluster=devnet)
-*   *Use the Solana Explorer link above to verify our Program Deployment and associated transactions.*
+*   **Program ID:** `<YOUR_DEPLOYED_PROGRAM_ID>`
+*   *Use Solana Explorer to verify deployment and provide proof transactions in PR description.*
 
 ---
 

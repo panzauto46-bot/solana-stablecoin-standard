@@ -1,53 +1,127 @@
-import { Connection, PublicKey } from '@solana/web3.js';
-import { logger } from '../utils/logger';
+import { Connection } from "@solana/web3.js";
+import { logger } from "../utils/logger";
+
+export interface HolderEntry {
+  address: string;
+  balance: number;
+}
+
+export interface MintBurnAuditEntry {
+  timestamp: string;
+  action: "mint" | "burn" | "minter_add" | "minter_remove";
+  details: string;
+  txId?: string;
+}
 
 export class MintBurnService {
-    private connection: Connection;
+  private readonly connection: Connection;
+  private readonly balances = new Map<string, number>();
+  private readonly minters = new Set<string>();
+  private readonly auditLog: MintBurnAuditEntry[] = [];
 
-    constructor(connection: Connection) {
-        this.connection = connection;
+  constructor(connection: Connection) {
+    this.connection = connection;
+    this.minters.add("Hn1V...7kRq");
+    this.minters.add("Fa8Z...P21s");
+  }
+
+  public async requestMint(amount: number, destination: string) {
+    logger.info(`[MINT REQUEST] amount=${amount} destination=${destination}`);
+    await this.verifyFiatDeposit(amount, destination);
+
+    const normalized = this.normalizeAmount(amount);
+    this.balances.set(destination, (this.balances.get(destination) ?? 0) + normalized);
+    const txId = `mock_mint_tx_${Math.random().toString(36).substring(2, 12)}`;
+    this.pushAudit("mint", `Minted ${normalized} to ${destination}`, txId);
+
+    return {
+      status: "success",
+      amount: normalized,
+      destination,
+      txId,
+      totalSupply: this.getTotalSupply(),
+    };
+  }
+
+  public async requestBurn(amount: number, source: string) {
+    logger.info(`[BURN REQUEST] amount=${amount} source=${source}`);
+    const normalized = this.normalizeAmount(amount);
+    const current = this.balances.get(source) ?? 0;
+    if (current < normalized) {
+      throw new Error(`Insufficient balance in source account ${source}`);
     }
 
-    public async requestMint(amount: number, destination: string) {
-        logger.info(`🏦 [MINT REQUEST] API Received Mint Request: ${amount} SSS -> ${destination}`);
+    this.balances.set(source, current - normalized);
+    const txId = `mock_burn_tx_${Math.random().toString(36).substring(2, 12)}`;
+    this.pushAudit("burn", `Burned ${normalized} from ${source}`, txId);
 
-        // Simulate complex check (KYC/FIAT Confirmation)
-        await this.verifyFiatDeposit(amount, destination);
+    return {
+      status: "success",
+      amount: normalized,
+      source,
+      txId,
+      totalSupply: this.getTotalSupply(),
+    };
+  }
 
-        logger.info(`💸 [MINT EXECUTE] Executing blockchain transaction to mint ${amount}...`);
-        // Example: await sdk.mint(amount, destination);
-
-        const mockSignature = `mock_mint_tx_${Math.random().toString(36).substring(7)}`;
-        logger.info(`✅ [MINT COMPLETE] Tx: ${mockSignature}`);
-
-        return {
-            status: 'success',
-            amount,
-            destination,
-            txId: mockSignature
-        };
+  public getTotalSupply(): number {
+    let sum = 0;
+    for (const value of this.balances.values()) {
+      sum += value;
     }
+    return sum;
+  }
 
-    public async requestBurn(amount: number, source: string) {
-        logger.info(`🔥 [BURN REQUEST] API Received Burn Request: ${amount} SSS from ${source}`);
+  public getHolders(minBalance = 0): HolderEntry[] {
+    return [...this.balances.entries()]
+      .map(([address, balance]) => ({ address, balance }))
+      .filter(h => h.balance >= minBalance)
+      .sort((a, b) => b.balance - a.balance);
+  }
 
-        logger.info(`🔥 [BURN EXECUTE] Executing blockchain transaction to burn ${amount}...`);
-        // Example: await sdk.burn(amount, source);
+  public listMinters(): string[] {
+    return [...this.minters.values()];
+  }
 
-        const mockSignature = `mock_burn_tx_${Math.random().toString(36).substring(7)}`;
-        logger.info(`✅ [BURN COMPLETE] Tx: ${mockSignature}. Initiating Fiat wire transfer to User Bank.`);
+  public addMinter(address: string) {
+    this.minters.add(address);
+    this.pushAudit("minter_add", `Added minter ${address}`);
+    return { status: "success", address };
+  }
 
-        return {
-            status: 'success',
-            amount,
-            source,
-            fiatAction: 'Initiating Bank Wire',
-            txId: mockSignature
-        };
+  public removeMinter(address: string) {
+    if (!this.minters.has(address)) {
+      throw new Error(`Minter ${address} not found.`);
     }
+    this.minters.delete(address);
+    this.pushAudit("minter_remove", `Removed minter ${address}`);
+    return { status: "success", address };
+  }
 
-    private async verifyFiatDeposit(amount: number, destination: string): Promise<boolean> {
-        logger.info(`⏳ [KYC] Verifying Fiat collateral deposit in Bank for ${destination}...`);
-        return new Promise(resolve => setTimeout(() => resolve(true), 1500));
+  public getAuditLog(action?: MintBurnAuditEntry["action"]): MintBurnAuditEntry[] {
+    if (!action) return this.auditLog;
+    return this.auditLog.filter(e => e.action === action);
+  }
+
+  private async verifyFiatDeposit(amount: number, destination: string): Promise<boolean> {
+    logger.info(`[FIAT VERIFY] Checking collateral for destination=${destination}, amount=${amount}`);
+    return new Promise(resolve => setTimeout(() => resolve(true), 800));
+  }
+
+  private normalizeAmount(amount: number): number {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new Error(`Invalid amount: ${amount}`);
     }
+    return Math.floor(amount);
+  }
+
+  private pushAudit(action: MintBurnAuditEntry["action"], details: string, txId?: string) {
+    this.auditLog.unshift({
+      timestamp: new Date().toISOString(),
+      action,
+      details,
+      txId,
+    });
+    this.auditLog.splice(500);
+  }
 }
