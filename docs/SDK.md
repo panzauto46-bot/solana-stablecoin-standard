@@ -1,50 +1,100 @@
-# 💻 @stbr/sss-token: SDK Installation & Usage
+# SDK.md
 
-This TypeScript library compiles the intricacies of _Token-2022 Extensions_, _Anchor CPIs_, and _Transfer Hooks_ into a straightforward Object-Oriented API for `SolanaStablecoin`.
+`@stbr/sss-token` exposes a preset-first API and custom extension config API for SSS-1 and SSS-2 flows.
 
-## Installation
+## Install
+
 ```bash
-npm install @stbr/sss-token
-yarn add @stbr/sss-token
+cd sdk
+npm install
+npm run build
 ```
 
-## Quick Start (SDK Init)
-The SDK requires a valid _Wallet_ and an RPC _Connection_ URL (Mainnet, Devnet, or Local). 
-It is recommended to place the `Mint Authority`'s *Private Key* in _Environment Variables_.
+## Preset Init
 
-```typescript
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import { SolanaStablecoin } from "@stbr/sss-token";
+```ts
+import { Connection, Keypair } from "@solana/web3.js";
+import { SolanaStablecoin, Presets } from "@stbr/sss-token";
 
-// Solana Devnet Smart Contract Program ID (Anchor)
-const PROGRAM_ID = new PublicKey("sssFeG1j3c5xU2aXZK1T8M2VfQf4wJpG6P8N9gYqA");
+const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+const authority = { publicKey: Keypair.generate().publicKey };
 
-async function main() {
-    const conn = new Connection("https://api.devnet.solana.com", "confirmed");
-    // Simulated keypair - IN PRODUCTION USE process.env.PRIVATE_KEY
-    const operatorWallet = Keypair.generate(); 
-
-    // Instantiate Control Panel (Bridge) to Protocol
-    const protocol = await SolanaStablecoin.create(conn, operatorWallet, PROGRAM_ID);
-
-    // Create an SSS-2 compliancy standard Fiat Asset
-    const fiatToken = await protocol.initMint('sss-2', 'XYZ Dollar', 'XYZD');
-    
-    // Allocate New Funds post-KYC
-    await protocol.mint(fiatToken, new PublicKey('USER_ADDRESS'), 50000000); 
-
-    console.log("Deployed Mint:", fiatToken.toBase58());
-}
-
-main();
+const stable = await SolanaStablecoin.create(connection, {
+  preset: Presets.SSS_2,
+  name: "My Stablecoin",
+  symbol: "MYUSD",
+  decimals: 6,
+  authority,
+});
 ```
 
-## Core Methods Reference
-*   `protocol.initMint(preset, name, symbol)`: Creates a _Token-2022 Stablecoin_ on Devnet.
-*   `protocol.mint(mintAddress, targetPubKey, amount_raw)`: Increases coin circulation to a user.
-*   `protocol.burn(mintAddress, sourcePubKey, amount_raw)`: Reduces / Destroys coin circulation from the *(Treasury)* wallet.
-*   `protocol.freeze(mintAddress, userAccount)`: Emergency status to freeze a specific wallet.
-*   `protocol.thaw(mintAddress, userAccount)`: Revokes the frozen status of a user's wallet.
-*   **(Compliance Actions)**
-    *   `protocol.blacklistAdd(hackerAddress)`: Inspects and automatically Rejects (_Reverts_) any `Transfer` by this wallet at the *hook* level.
-    *   `protocol.seize(mintAddress, hackerAddress, treasuryAddress)`: Forces the `Permanent Delegate` to drain fiat coins back to the SSS-Forge developers' regulatory wallet.
+## Custom Init
+
+```ts
+const custom = await SolanaStablecoin.create(connection, {
+  name: "Custom Stable",
+  symbol: "CUSD",
+  authority,
+  extensions: {
+    permanentDelegate: true,
+    transferHook: true,
+    defaultAccountFrozen: false,
+  },
+});
+```
+
+## Core Operations
+
+```ts
+await stable.mint({ recipient, amount: 1_000_000, minter: authority.publicKey });
+await stable.burn({ amount: 250_000 });
+await stable.freeze({ address: suspiciousAccount });
+await stable.thaw({ address: suspiciousAccount });
+await stable.pause();
+await stable.unpause();
+
+const supply = await stable.getTotalSupply();
+const holders = await stable.holders({ minBalance: 100_000 });
+const status = await stable.status();
+```
+
+## Compliance Namespace (SSS-2)
+
+```ts
+await stable.compliance.blacklistAdd(address, "Sanctions screening match");
+await stable.compliance.blacklistRemove(address);
+await stable.compliance.seize({
+  from: blacklistedAccount,
+  to: treasuryAccount,
+  amount: 500_000,
+});
+```
+
+## Role and Authority Management
+
+```ts
+await stable.updateRoles({
+  minter: newMinter,
+  pauser: newPauser,
+  blacklister: newBlacklister,
+});
+
+await stable.transferAuthority(newMasterAuthority);
+const minters = await stable.mintersList();
+```
+
+## Snapshot / Restore
+
+The SDK supports local runtime state snapshots for CLI workflows:
+
+```ts
+const snapshot = stable.toSnapshot();
+const restored = await SolanaStablecoin.open(connection, {
+  name: snapshot.name,
+  symbol: snapshot.symbol,
+  authority,
+  preset: snapshot.preset,
+  decimals: snapshot.decimals,
+  extensions: snapshot.extensions,
+}, snapshot);
+```
