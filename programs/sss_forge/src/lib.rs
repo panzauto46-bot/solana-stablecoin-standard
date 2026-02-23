@@ -6,7 +6,7 @@ pub mod instructions;
 
 use instructions::*;
 
-declare_id!("sssFeG1j3c5xU2aXZK1T8M2VfQf4wJpG6P8N9gYqA");
+declare_id!("HvCAF5etBJu3TqF8GwBQZLXozMjSkKMNn3xywtpQmaKJ");
 
 #[program]
 pub mod sss_forge {
@@ -82,7 +82,6 @@ pub mod sss_forge {
 
     /// Transfer Hook execution
     /// This is automatically called by Token-2022 on transfer
-    #[interface(spl_transfer_hook_interface::execute)]
     pub fn transfer_hook_execute(ctx: Context<TransferHookExecute>, amount: u64) -> Result<()> {
         instructions::transfer_hook::handler(ctx, amount)
     }

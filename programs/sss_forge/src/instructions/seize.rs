@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount, Token2022};
+use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked};
 use anchor_spl::token_2022::spl_token_2022::extension::{BaseStateWithExtensions, StateWithExtensions};
 use anchor_spl::token_2022::spl_token_2022::extension::permanent_delegate::PermanentDelegate;
-use anchor_spl::token_2022::{transfer_checked, TransferChecked};
 use crate::state::Config;
 use crate::errors::ProgramError;
 
@@ -17,16 +16,16 @@ pub struct SeizeFunds<'info> {
     #[account(mut)]
     pub mint: InterfaceAccount<'info, Mint>,
 
-    #[account(mut, mint::target = mint)]
+    #[account(mut, token::mint = mint)]
     pub source_account: InterfaceAccount<'info, TokenAccount>,
     
-    #[account(mut, mint::target = mint)]
+    #[account(mut, token::mint = mint)]
     pub destination_account: InterfaceAccount<'info, TokenAccount>,
 
     /// CHECK: The permanent delegate of the mint (which is `config` in our case, signed by seizer logic)
     pub delegate: Signer<'info>,
 
-    pub token_program: Program<'info, Token2022>,
+    pub token_program: Interface<'info, TokenInterface>,
 }
 
 pub fn handler(ctx: Context<SeizeFunds>, amount: u64) -> Result<()> {
@@ -50,7 +49,7 @@ pub fn handler(ctx: Context<SeizeFunds>, amount: u64) -> Result<()> {
         .delegate;
     
     // Convert Option<Pubkey> to check if delegate exists
-    let delegate_pubkey = delegate_info.into();
+    let delegate_pubkey: Option<Pubkey> = delegate_info.into();
     if delegate_pubkey.is_none() {
         return err!(ProgramError::MissingPermanentDelegate);
     }
@@ -69,7 +68,7 @@ pub fn handler(ctx: Context<SeizeFunds>, amount: u64) -> Result<()> {
     );
     
     // Seize via CPI transfer
-    transfer_checked(cpi_ctx, amount, ctx.accounts.mint.decimals)?;
+    token_interface::transfer_checked(cpi_ctx, amount, ctx.accounts.mint.decimals)?;
 
     Ok(())
 }
