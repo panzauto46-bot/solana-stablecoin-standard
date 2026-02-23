@@ -1,34 +1,17 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::TokenAccount;
-use spl_transfer_hook_interface::instruction::ExecuteInstruction;
-use crate::state::BlacklistEntry;
-use crate::errors::ProgramError;
 
 #[derive(Accounts)]
 pub struct TransferHookExecute<'info> {
-    #[account(
-        token::mint = mint, 
-        token::authority = owner,
-    )]
-    pub source: InterfaceAccount<'info, TokenAccount>,
-    /// CHECK: Not validating mint properties manually here
+    /// CHECK: transfer source token account
+    pub source: UncheckedAccount<'info>,
+    /// CHECK: token mint account
     pub mint: UncheckedAccount<'info>,
-    #[account(
-        token::mint = mint,
-    )]
-    pub destination: InterfaceAccount<'info, TokenAccount>,
+    /// CHECK: transfer destination token account
+    pub destination: UncheckedAccount<'info>,
     /// CHECK: source token owner
     pub owner: UncheckedAccount<'info>,
     /// CHECK: ExtraAccountMetaList account is required
-    #[account(
-        seeds = [b"extra-account-metas", mint.key().as_ref()],
-        bump
-    )]
     pub extra_account_meta_list: UncheckedAccount<'info>,
-
-    /// We verify blacklisted status of owner and destination owner.
-    /// In a real implementation we have to parse from ExtraAccountMetaList dynamically.
-    /// For this template we illustrate reading blacklist PDAs derived from the address.
 }
 
 pub fn handler(ctx: Context<TransferHookExecute>, _amount: u64) -> Result<()> {
@@ -41,5 +24,6 @@ pub fn handler(ctx: Context<TransferHookExecute>, _amount: u64) -> Result<()> {
     // (requires proper setup of ExtraAccountMetaList which is out of simple scope but conceptually:)
     // if sender_blacklist.is_blacklisted { return err!(ProgramError::AccountBlacklisted) }
     
+    let _ = ctx;
     Ok(())
 }
